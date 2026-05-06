@@ -3,6 +3,7 @@ import { Pill } from "@/components/ui/Pill";
 import {
   formatContributionMeta,
   getContributorGithubUrl,
+  getOrganizationGithubUrl,
 } from "@/components/oss/utils";
 
 export default function OssContributorCard({
@@ -11,8 +12,24 @@ export default function OssContributorCard({
   contributor: ContributorView;
 }) {
   const contributorUrl = getContributorGithubUrl(contributor);
-  const visibleOrgs = contributor.organizations.slice(0, 5);
-  const remainingOrgs = contributor.organizations.slice(5);
+  const shouldHideAdeiOrg =
+    (contributor.login?.toLowerCase() === "saniyafatima07"
+      || contributor.name.trim().toLowerCase() === "saniya fatima");
+  const sortedOrganizations = contributor.organizations
+    .filter(
+      (organization) =>
+        !(
+          shouldHideAdeiOrg
+          && organization.name.trim().toLowerCase() === "adeyosemanputra"
+        ),
+    )
+    .sort(
+      (left, right) =>
+        (right.prCount ?? 0) - (left.prCount ?? 0) ||
+        left.name.localeCompare(right.name),
+  );
+  const visibleOrgs = sortedOrganizations.slice(0, 5);
+  const remainingOrgs = sortedOrganizations.slice(5);
   return (
     <div className="rounded-[16px] bg-[#1c1c1c] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.22)] sm:rounded-[20px] sm:p-5 md:p-6">
       <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
@@ -58,13 +75,20 @@ export default function OssContributorCard({
 ) : (
   <>
     {visibleOrgs.map((organization) => (
-      <Pill
+      <a
         key={organization.id}
-        className="max-w-[160px]"
-        variant="muted"
+        href={getOrganizationGithubUrl(organization.name)}
+        target="_blank"
+        rel="noreferrer"
+        className="transition-transform hover:-translate-y-0.5"
       >
-        <span className="truncate">{organization.name}</span>
-      </Pill>
+        <Pill
+          className="max-w-[160px]"
+          variant="muted"
+        >
+          <span className="truncate">{organization.name}</span>
+        </Pill>
+      </a>
     ))}
 
     {remainingOrgs.length > 0 && (
@@ -77,8 +101,20 @@ export default function OssContributorCard({
         </Pill>
 
         {/* Hover dropdown */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-2 min-w-[200px] max-w-[400px] rounded-lg bg-[#111] px-3 py-2 text-xs text-zinc-400 shadow-xl opacity-0 invisible group-hover:visible group-hover:opacity-100 transition whitespace-normal">
-        {remainingOrgs.map((org) => org.name).join(", ")}
+        <div className="invisible absolute left-1/2 top-full z-50 mt-2 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap gap-1.5 rounded-lg bg-[#111] p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 sm:max-w-[340px]">
+        {remainingOrgs.map((org) => (
+          <a
+            key={org.id}
+            href={getOrganizationGithubUrl(org.name)}
+            target="_blank"
+            rel="noreferrer"
+            className="transition-transform hover:-translate-y-0.5"
+          >
+            <Pill size="compact" variant="muted">
+              {org.name}
+            </Pill>
+          </a>
+        ))}
         </div>
       </div>
     )}
